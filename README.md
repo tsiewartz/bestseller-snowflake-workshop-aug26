@@ -1,19 +1,19 @@
-# Bestseller Snowflake Workshop — August 26
+# Bestseller Snowflake Workshop – August 26
 
 ## Full Agenda
 
 | Time | Session |
 |---|---|
 | 09:00 | Platform direction & where Bestseller fits |
-| 09:15 | Agentic BI in production — CoWork and what comes after |
-| 09:50 | Governing the full stack — BI tools, apps, and pipelines |
+| 09:15 | Agentic BI in production: CoWork and what comes after |
+| 09:50 | Governing the full stack: BI tools, apps, and pipelines |
 | 10:20 | Snowflake as an application platform |
 | 10:55 | Data products, catalog governance, and platform interoperability |
 | 11:30 | Lunch |
 | 12:00 | Build brief: what we're assembling this afternoon |
-| 12:10 | [One connection, multiple agents — MCP in practice](#block-1--1210-1245-35-min) |
-| 12:45 | [Run dbt natively — no Airflow, no GH Actions](#block-2--1245-1320-35-min) |
-| 13:20 | [Ship it — a governed app in 30 minutes](#block-3--1320-1350-30-min) |
+| 12:10 | [One connection, multiple agents: MCP in practice](#block-1--1210-1245-35-min) |
+| 12:45 | [Run dbt natively in Snowflake](#block-2--1245-1320-35-min) |
+| 13:20 | [Ship it: a governed app in 30 minutes](#block-3--1320-1350-30-min) |
 | 13:50 | Demo: the full system, live |
 
 ---
@@ -22,22 +22,22 @@
 
 By 13:50 you'll have assembled one connected system:
 
-- **Block 1** — Two governed Cortex Agents, accessible from Claude Desktop via a single MCP connection
-- **Block 2** — A dbt pipeline running natively in Snowflake, modelling the data those agents query
-- **Block 3** — A governed app that calls the agents you built in Block 1 and shows only role-appropriate data
+- **Block 1** – Two governed Cortex Agents, accessible from Claude Desktop via a single MCP connection
+- **Block 2** – A dbt pipeline running natively in Snowflake, modelling the data those agents query
+- **Block 3** – A governed app that calls the agents you built in Block 1 and shows only role-appropriate data
 
-The app talks to the agents. The agents query the modelled data. Governance is enforced automatically at every layer — nothing in the app code manages access.
+The app talks to the agents. The agents query the modelled data. Governance is enforced automatically at every layer. Nothing in the app code manages access.
 
 **Post to the shared channel as you go:** When you complete Block 1, post your MCP server URL. When you complete Block 3, post your app URL. By the end of the afternoon the channel is a record of what the group built.
 
 ---
 
-## Block 1 — 12:10–12:45 (35 min)
-### One connection, multiple agents — MCP in practice
+## Block 1 – 12:10–12:45 (35 min)
+### One connection, multiple agents: MCP in practice
 
 **North Star:** Can you ask two different agents from one Claude Desktop connection and get role-appropriate answers from each?
 
-**Prereqs — confirm before starting:**
+**Prereqs – confirm before starting:**
 - Claude Desktop installed
 - MCP server URL from Trine
 - OAuth client ID + secret from Trine
@@ -80,7 +80,7 @@ $$;
 
 **Try to break it:** Ask Agent A a question that belongs to Agent B's domain. Does it leak data or stay in scope? Tune the system prompt until the boundary holds.
 
-**Stretch — agent versioning:** Create a second version of one of your agents with a modified system prompt. Run both versions simultaneously from the same MCP connection — one as `LIVE`, one as `EXPERIMENTAL`. This is how you safely iterate on agents in production without breaking the live version.
+**Stretch – agent versioning:** Create a second version of one of your agents with a modified system prompt. Run both versions simultaneously from the same MCP connection, one as `LIVE` and one as `EXPERIMENTAL`. This is how you safely iterate on agents in production without breaking the live version.
 ```sql
 -- After editing the agent, commit a new version
 ALTER CORTEX AGENT WORKSHOP_DB.AI.BRAND_AGENT ADD VERSION v2 FROM LIVE;
@@ -91,12 +91,12 @@ ALTER CORTEX AGENT WORKSHOP_DB.AI.BRAND_AGENT SET DEFAULT VERSION = v1;
 
 ---
 
-## Block 2 — 12:45–13:20 (35 min)
-### Run dbt natively — no Airflow, no GH Actions
+## Block 2 – 12:45–13:20 (35 min)
+### Run dbt natively in Snowflake
 
-**North Star:** Can you run your dbt models from Snowflake with no Airflow involvement and see the lineage in Snowsight?
+**North Star:** Can you run your dbt models natively in Snowflake and see the lineage in Snowsight?
 
-**Prereqs — confirm before starting:**
+**Prereqs – confirm before starting:**
 - `snow` CLI configured: `snow connection test`
 - An existing dbt project, or use a minimal 2-model example
 
@@ -112,9 +112,9 @@ snow dbt deploy --project-dir <path> --name WORKSHOP_DBT
 snow dbt execute --name WORKSHOP_DBT
 ```
 
-3. Verify in Snowsight: open Query History — the dbt models ran as Snowflake-native tasks, no external orchestrator.
+3. Verify in Snowsight: open Query History – the dbt models ran as Snowflake-native tasks with no external orchestrator.
 
-4. Check lineage: Snowsight → Data → Lineage — the dbt output tables show their upstream dependencies.
+4. Check lineage: Snowsight → Data → Lineage – the dbt output tables show their upstream dependencies.
 
 5. Schedule on a Task:
 ```sql
@@ -125,22 +125,22 @@ AS
   EXECUTE DBT PROJECT WORKSHOP_DB.PUBLIC.WORKSHOP_DBT;
 ```
 
-**Stretch:** Compare `snow dbt execute` run time vs. your current Airflow DAG for the same models.
+**Stretch:** Compare `snow dbt execute` run time vs. your existing pipeline for the same models.
 
 ---
 
-## Block 3 — 13:20–13:50 (30 min)
-### Ship it — a governed app in 30 minutes
+## Block 3 – 13:20–13:50 (30 min)
+### Ship it: a governed app in 30 minutes
 
 **North Star:** Does the same app URL return different data for two different Snowflake users?
 
-**Goal:** Build an app that calls the agents from Block 1 and shows role-appropriate data. The app inherits the user's Snowflake session role — all governance applies automatically with no access logic in the app code.
+**Goal:** Build an app that calls the agents from Block 1 and shows role-appropriate data. The app inherits the user's Snowflake session role. All governance applies automatically with no access logic in the app code.
 
 Choose your path:
 
 ---
 
-### Path A — React App Runtime (CLI)
+### Path A – React App Runtime (CLI)
 *Prereqs: Node 18+, Docker Desktop running, `snow` CLI configured*
 
 1. Scaffold:
@@ -156,7 +156,7 @@ const result = await snowflake.execute(
 );
 ```
 
-3. Add session identity to the UI — open `src/app/page.tsx` and add:
+3. Add session identity to the UI – open `src/app/page.tsx` and add:
 ```ts
 const identity = await snowflake.execute(
   'SELECT CURRENT_USER() AS user, CURRENT_ROLE() AS role'
@@ -183,7 +183,7 @@ snow app deploy
 
 ---
 
-### Path B — Streamlit in Snowflake (Snowsight)
+### Path B – Streamlit in Snowflake (Snowsight)
 *No local setup required. Fully deployed by end of session.*
 
 1. Open Snowsight → Projects → Streamlit → + Streamlit App
@@ -196,7 +196,7 @@ from snowflake.snowpark.context import get_active_session
 
 session = get_active_session()
 
-# Show session identity — makes role inheritance visible
+# Show session identity – makes role inheritance visible
 identity = session.sql(
     "SELECT CURRENT_USER() AS user, CURRENT_ROLE() AS role"
 ).collect()[0]
@@ -204,7 +204,7 @@ st.caption(f"Logged in as {identity['USER']} · Role: {identity['ROLE']}")
 
 st.title("Bestseller Data App")
 
-# Governed table — RAP applies automatically
+# Governed table – RAP applies automatically
 df = session.sql("SELECT * FROM <your_governed_table> LIMIT 100").to_pandas()
 st.dataframe(df)
 
@@ -226,7 +226,7 @@ if question:
 
 ---
 
-**Try to break it:** Open the app in a second browser window as a different Snowflake user. Do you see different data? Try to get the app to show data outside your role's access. It shouldn't be possible — governance is enforced on the Snowflake side, not in the app.
+**Try to break it:** Open the app in a second browser window as a different Snowflake user. Do you see different data? Try to get the app to show data outside your role's access. It shouldn't be possible – governance is enforced on the Snowflake side, not in the app.
 
 **Post to the shared channel:** your app URL.
 
@@ -236,33 +236,33 @@ Both paths end the same way: a running app, calling governed agents, showing rol
 
 ---
 
-## Admin Setup (one person at Bestseller, before the day)
+## Admin Setup – one person at Bestseller, before the day
 
 See [admin-setup.sql](admin-setup.sql) for the full SQL. The file walks through 8 steps with verification checks at each stage.
 
 **Summary of what needs to happen:**
 
-1. **Verify features** — run the check queries in Step 1 of admin-setup.sql to confirm Cortex AI, CoWork, MCP servers, and compute pools are available on your account. If anything fails, contact Trine before the day.
+1. **Verify features** – run the check queries in Step 1 of admin-setup.sql to confirm Cortex AI, CoWork, MCP servers, and compute pools are available on your account. If anything fails, contact Trine before the day.
 
-2. **Identify two tables** — pick 1-2 real but non-critical tables that have:
+2. **Identify two tables** – pick 1-2 real but non-critical tables that have:
    - A categorical column (brand, market, department, region) — used for the agent scope demo
    - A date column + a numeric measure (revenue, units, headcount) — used for the AI analytics demo
-   Note the full paths (`database.schema.table`) — share with Trine and write them on the board on the day.
+   Note the full paths (`database.schema.table`) and share with Trine before the day.
 
-3. **Create workshop infrastructure** — run Steps 3-6 in admin-setup.sql. This creates `WORKSHOP_DB`, `WORKSHOP_ROLE`, `WORKSHOP_WH`, a compute pool, the MCP OAuth integration, and the MCP server skeleton.
+3. **Create workshop infrastructure** – run Steps 3-6 in admin-setup.sql. This creates `WORKSHOP_DB`, `WORKSHOP_ROLE`, `WORKSHOP_WH`, a compute pool, the MCP OAuth integration, and the MCP server skeleton.
 
-4. **Create a dedicated role** — `WORKSHOP_ROLE` is created by the script. Using a dedicated role keeps workshop activity isolated from production and makes cleanup easy afterwards. Do not reuse an existing production role.
+4. **Create a dedicated role** – `WORKSHOP_ROLE` is created by the script. Using a dedicated role keeps workshop activity isolated from production and makes cleanup easy afterwards. Do not reuse an existing production role.
 
-5. **Configure each participant** — for every attendee, run:
+5. **Configure each participant** – for every attendee, run:
 ```sql
 GRANT ROLE WORKSHOP_ROLE TO USER <username>;
 ALTER USER <username>
   SET DEFAULT_ROLE = 'WORKSHOP_ROLE'
       DEFAULT_WAREHOUSE = 'WORKSHOP_WH';
 ```
-The `DEFAULT_ROLE` setting is required for MCP — Claude uses the default role, not the active role.
+The `DEFAULT_ROLE` setting is required for MCP. Claude uses the default role, not the active role.
 
-6. **Check network policy** — if your Snowflake account has a network policy, Claude's outbound IPs must be allowed. See Step 8 in admin-setup.sql. Get Anthropic's current IP list from docs.anthropic.com/en/docs/resources/ip-addresses.
+6. **Check network policy** – if your Snowflake account has a network policy, Claude's outbound IPs must be allowed. See Step 8 in admin-setup.sql. Get Anthropic's current IP list from docs.anthropic.com/en/docs/resources/ip-addresses.
 
 **MCP server URL to share with participants on the day:**
 ```
