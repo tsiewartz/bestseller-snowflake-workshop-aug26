@@ -266,7 +266,6 @@ Use hyphens not underscores in the account URL.
 - [ ] Snowflake CLI: `brew install snowflake-cli`
 - [ ] Configure connection: `snow connection add`
 - [ ] Test: `snow connection test`
-- [ ] Docker Desktop (only needed if you want to deploy at the end — not required for the core exercise)
 
 **Block 2 (dbt) only:**
 - [ ] Snowflake CLI installed and connection working (same as above)
