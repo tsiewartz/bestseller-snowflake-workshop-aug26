@@ -1,22 +1,5 @@
 # Bestseller Snowflake Workshop – August 26
 
-## Full Agenda
-
-| Time | Session |
-|---|---|
-| 09:00 | Platform direction & where Bestseller fits |
-| 09:15 | Agentic BI in production: CoWork and what comes after |
-| 09:50 | Governing the full stack: BI tools, apps, and pipelines |
-| 10:20 | Snowflake as an application platform |
-| 10:55 | Data products, catalog governance, and platform interoperability |
-| 11:30 | Lunch |
-| 12:00 | Build brief: what we're assembling this afternoon |
-| 12:10 | [One connection, multiple agents: MCP in practice](#block-1--1210-1245-35-min) |
-| 12:45 | [Run dbt natively in Snowflake](#block-2--1245-1320-35-min) |
-| 13:20 | [Ship it: a governed app in 30 minutes](#block-3--1320-1350-30-min) |
-| 13:50 | Demo: the full system, live |
-
----
 
 ## What we're building this afternoon
 
