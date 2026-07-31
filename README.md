@@ -236,11 +236,35 @@ Both paths end the same way: a running app, calling governed agents, showing rol
 
 ---
 
-## Admin Setup
+## Admin Setup (one person at Bestseller, before the day)
 
-See [admin-setup.sql](admin-setup.sql) — run this before the day.
+See [admin-setup.sql](admin-setup.sql) for the full SQL. The file walks through 8 steps with verification checks at each stage.
 
-**MCP server URL to share with participants:**
+**Summary of what needs to happen:**
+
+1. **Verify features** — run the check queries in Step 1 of admin-setup.sql to confirm Cortex AI, CoWork, MCP servers, and compute pools are available on your account. If anything fails, contact Trine before the day.
+
+2. **Identify two tables** — pick 1-2 real but non-critical tables that have:
+   - A categorical column (brand, market, department, region) — used for the agent scope demo
+   - A date column + a numeric measure (revenue, units, headcount) — used for the AI analytics demo
+   Note the full paths (`database.schema.table`) — share with Trine and write them on the board on the day.
+
+3. **Create workshop infrastructure** — run Steps 3-6 in admin-setup.sql. This creates `WORKSHOP_DB`, `WORKSHOP_ROLE`, `WORKSHOP_WH`, a compute pool, the MCP OAuth integration, and the MCP server skeleton.
+
+4. **Create a dedicated role** — `WORKSHOP_ROLE` is created by the script. Using a dedicated role keeps workshop activity isolated from production and makes cleanup easy afterwards. Do not reuse an existing production role.
+
+5. **Configure each participant** — for every attendee, run:
+```sql
+GRANT ROLE WORKSHOP_ROLE TO USER <username>;
+ALTER USER <username>
+  SET DEFAULT_ROLE = 'WORKSHOP_ROLE'
+      DEFAULT_WAREHOUSE = 'WORKSHOP_WH';
+```
+The `DEFAULT_ROLE` setting is required for MCP — Claude uses the default role, not the active role.
+
+6. **Check network policy** — if your Snowflake account has a network policy, Claude's outbound IPs must be allowed. See Step 8 in admin-setup.sql. Get Anthropic's current IP list from docs.anthropic.com/en/docs/resources/ip-addresses.
+
+**MCP server URL to share with participants on the day:**
 ```
 https://<org>-<account>.snowflakecomputing.com/api/v2/databases/WORKSHOP_DB/schemas/AI/mcp-servers/WORKSHOP_MCP_SERVER
 ```
