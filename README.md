@@ -1,21 +1,41 @@
 # Bestseller Snowflake Workshop — August 26
 
-Hands-on session guide for three afternoon workshop blocks.
+## Full Agenda
 
-## Agenda
-
-| Time | Block |
+| Time | Session |
 |---|---|
-| 12:00–12:45 | [Block 1: MCP Configuration](#block-1--1200-1245-45-min) |
-| 12:45–13:20 | [Block 2: dbt Project in Snowflake](#block-2--1245-1320-35-min) |
-| 13:20–13:50 | [Block 3: Governed App Deployment](#block-3--1320-1350-30-min) |
+| 09:00 | Platform direction & where Bestseller fits |
+| 09:15 | Agentic BI in production — CoWork and what comes after |
+| 09:50 | Governing the full stack — BI tools, apps, and pipelines |
+| 10:20 | Snowflake as an application platform |
+| 10:55 | Data products, catalog governance, and platform interoperability |
+| 11:30 | Lunch |
+| 12:00 | Build brief: what we're assembling this afternoon |
+| 12:10 | [One connection, multiple agents — MCP in practice](#block-1--1210-1245-35-min) |
+| 12:45 | [Run dbt natively — no Airflow, no GH Actions](#block-2--1245-1320-35-min) |
+| 13:20 | [Ship it — a governed app in 30 minutes](#block-3--1320-1350-30-min) |
+| 13:50 | Demo: the full system, live |
 
 ---
 
-## Block 1 — 12:00–12:45 (45 min)
-### MCP Configuration: Multiple Cortex Agents Behind a Single Connection
+## What we're building this afternoon
 
-**Goal:** Two Cortex Agents with different data scopes, both reachable through a single MCP connection in Claude Desktop.
+By 13:50 you'll have assembled one connected system:
+
+- **Block 1** — Two governed Cortex Agents, accessible from Claude Desktop via a single MCP connection
+- **Block 2** — A dbt pipeline running natively in Snowflake, modelling the data those agents query
+- **Block 3** — A governed app that calls the agents you built in Block 1 and shows only role-appropriate data
+
+The app talks to the agents. The agents query the modelled data. Governance is enforced automatically at every layer — nothing in the app code manages access.
+
+**Post to the shared channel as you go:** When you complete Block 1, post your MCP server URL. When you complete Block 3, post your app URL. By the end of the afternoon the channel is a record of what the group built.
+
+---
+
+## Block 1 — 12:10–12:45 (35 min)
+### One connection, multiple agents — MCP in practice
+
+**North Star:** Can you ask two different agents from one Claude Desktop connection and get role-appropriate answers from each?
 
 **Prereqs — confirm before starting:**
 - Claude Desktop installed
@@ -26,8 +46,7 @@ Hands-on session guide for three afternoon workshop blocks.
 
 1. Configure the MCP connection in Claude Desktop:
    - Open Settings → Connectors → Add custom connector
-   - Paste the MCP server URL
-   - Paste the OAuth client ID and secret
+   - Paste the MCP server URL and OAuth credentials
    - Click Add → browser opens → log in to Snowflake → approve consent screen
    - Verify: Snowflake tools appear in Claude
 
@@ -59,14 +78,23 @@ $$;
 
 5. From Claude Desktop, ask each agent a domain-specific question. Confirm they stay in their lane and return role-appropriate data.
 
-**Stretch:** Ask Agent A a question that belongs to Agent B's domain. Observe the behaviour. Tune the system prompt to handle the boundary case — this is the most realistic production problem.
+**Try to break it:** Ask Agent A a question that belongs to Agent B's domain. Does it leak data or stay in scope? Tune the system prompt until the boundary holds.
+
+**Stretch — agent versioning:** Create a second version of one of your agents with a modified system prompt. Run both versions simultaneously from the same MCP connection — one as `LIVE`, one as `EXPERIMENTAL`. This is how you safely iterate on agents in production without breaking the live version.
+```sql
+-- After editing the agent, commit a new version
+ALTER CORTEX AGENT WORKSHOP_DB.AI.BRAND_AGENT ADD VERSION v2 FROM LIVE;
+ALTER CORTEX AGENT WORKSHOP_DB.AI.BRAND_AGENT SET DEFAULT VERSION = v1;
+```
+
+**Post to the shared channel:** your MCP server URL.
 
 ---
 
 ## Block 2 — 12:45–13:20 (35 min)
-### dbt Project in Snowflake
+### Run dbt natively — no Airflow, no GH Actions
 
-**Goal:** Deploy a dbt project as a Snowflake-native object and run it without an external orchestrator.
+**North Star:** Can you run your dbt models from Snowflake with no Airflow involvement and see the lineage in Snowsight?
 
 **Prereqs — confirm before starting:**
 - `snow` CLI configured: `snow connection test`
@@ -84,7 +112,7 @@ snow dbt deploy --project-dir <path> --name WORKSHOP_DBT
 snow dbt execute --name WORKSHOP_DBT
 ```
 
-3. Verify in Snowsight: open Query History — the dbt models ran as Snowflake-native tasks, no external orchestrator involved.
+3. Verify in Snowsight: open Query History — the dbt models ran as Snowflake-native tasks, no external orchestrator.
 
 4. Check lineage: Snowsight → Data → Lineage — the dbt output tables show their upstream dependencies.
 
@@ -102,18 +130,18 @@ AS
 ---
 
 ## Block 3 — 13:20–13:50 (30 min)
-### Governed App Deployment
+### Ship it — a governed app in 30 minutes
 
-**Goal:** Build an app connected to governed Snowflake data and a Cortex Agent. The app inherits the user's session role — all governance applies automatically, no access logic in the app code.
+**North Star:** Does the same app URL return different data for two different Snowflake users?
+
+**Goal:** Build an app that calls the agents from Block 1 and shows role-appropriate data. The app inherits the user's Snowflake session role — all governance applies automatically with no access logic in the app code.
 
 Choose your path:
 
 ---
 
 ### Path A — React App Runtime (CLI)
-*Target: local running app (`snow app run`). Skip deploy — 30 min is not enough to deploy.*
-
-**Prereqs:** Node 18+, Docker Desktop running, `snow` CLI configured
+*Prereqs: Node 18+, Docker Desktop running, `snow` CLI configured*
 
 1. Scaffold:
 ```bash
@@ -128,20 +156,30 @@ const result = await snowflake.execute(
 );
 ```
 
-3. Add a Cortex Agent call — create `src/app/api/ask/route.ts`:
+3. Add session identity to the UI — open `src/app/page.tsx` and add:
+```ts
+const identity = await snowflake.execute(
+  'SELECT CURRENT_USER() AS user, CURRENT_ROLE() AS role'
+);
+// Render user and role prominently in the UI
 ```
-POST /api/v2/cortex/agents/<agent_name>:run
+
+4. Add a call to your Block 1 agent — create `src/app/api/ask/route.ts`:
+```
+POST /api/v2/cortex/agents/WORKSHOP_DB.AI.BRAND_AGENT:run
 Body: { messages: [{ role: "user", content: question }] }
 ```
 Add a text input + response in `src/app/page.tsx`.
 
-4. Run:
+5. Run:
 ```bash
 snow app run
 ```
-App opens in browser. Verify the table data is filtered by your role.
 
-**Stretch:** `snow app deploy` if time allows.
+6. Deploy if time allows:
+```bash
+snow app deploy
+```
 
 ---
 
@@ -153,33 +191,48 @@ App opens in browser. Verify the table data is filtered by your role.
 2. Paste and adapt:
 ```python
 import streamlit as st
+import requests
 from snowflake.snowpark.context import get_active_session
 
 session = get_active_session()
 
+# Show session identity — makes role inheritance visible
+identity = session.sql(
+    "SELECT CURRENT_USER() AS user, CURRENT_ROLE() AS role"
+).collect()[0]
+st.caption(f"Logged in as {identity['USER']} · Role: {identity['ROLE']}")
+
 st.title("Bestseller Data App")
 
+# Governed table — RAP applies automatically
 df = session.sql("SELECT * FROM <your_governed_table> LIMIT 100").to_pandas()
 st.dataframe(df)
 
 st.divider()
+
+# Call the agent from Block 1
 question = st.text_input("Ask a question about your data")
 if question:
-    response = session.sql(f"""
-        SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-7b', '{question}')
-    """).collect()
-    st.write(response[0][0])
+    token = session.sql("SELECT SYSTEM$USER_ACCESS_TOKEN()").collect()[0][0]
+    response = requests.post(
+        "https://<account>.snowflakecomputing.com/api/v2/cortex/agents/WORKSHOP_DB.AI.BRAND_AGENT:run",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"messages": [{"role": "user", "content": question}]}
+    )
+    st.write(response.json().get("message", {}).get("content", ""))
 ```
 
 3. Click Run. App is live inside Snowflake.
 
-4. Test: open the app as a different user or switch your role — confirm the table data changes accordingly.
+---
 
-**Stretch:** Replace `CORTEX.COMPLETE` with a proper Cortex Agent REST call for a scoped, governed response.
+**Try to break it:** Open the app in a second browser window as a different Snowflake user. Do you see different data? Try to get the app to show data outside your role's access. It shouldn't be possible — governance is enforced on the Snowflake side, not in the app.
+
+**Post to the shared channel:** your app URL.
 
 ---
 
-Both paths end the same way: a running app where governance is enforced by the Snowflake session, not the app. Demo both to the room at 13:50.
+Both paths end the same way: a running app, calling governed agents, showing role-appropriate data. Demo both to the room at 13:50.
 
 ---
 
