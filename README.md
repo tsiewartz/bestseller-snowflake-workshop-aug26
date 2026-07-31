@@ -124,7 +124,7 @@ Choose your path:
 ---
 
 ### Path A – React App Runtime (CLI)
-*Prereqs: Node 18+, Docker Desktop running, `snow` CLI configured*
+*Prereqs: Node 18+, `snow` CLI configured*
 
 1. Scaffold:
 ```bash
@@ -263,10 +263,10 @@ Use hyphens not underscores in the account URL.
 
 **Path A (React App Runtime) only:**
 - [ ] Node.js 18+: `node --version`
-- [ ] Docker Desktop installed and running
 - [ ] Snowflake CLI: `brew install snowflake-cli`
 - [ ] Configure connection: `snow connection add`
 - [ ] Test: `snow connection test`
+- [ ] Docker Desktop (only needed if you want to deploy at the end — not required for the core exercise)
 
 **Block 2 (dbt) only:**
 - [ ] Snowflake CLI installed and connection working (same as above)
